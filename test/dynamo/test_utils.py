@@ -326,6 +326,7 @@ class TestDynamoTimed(TestCase):
  'inductor_fx_remote_cache_hit_keys': None,
  'inductor_fx_remote_cache_miss_count': None,
  'inductor_fx_remote_cache_miss_keys': None,
+ 'ir_count': 9,
  'is_forward': True,
  'is_runtime': False,
  'joint_graph_pass_time_us': 0,
@@ -410,6 +411,7 @@ class TestDynamoTimed(TestCase):
  'inductor_fx_remote_cache_hit_keys': None,
  'inductor_fx_remote_cache_miss_count': None,
  'inductor_fx_remote_cache_miss_keys': None,
+ 'ir_count': 9,
  'is_forward': False,
  'is_runtime': False,
  'joint_graph_pass_time_us': None,
@@ -442,6 +444,33 @@ class TestDynamoTimed(TestCase):
  'triton_kernel_compile_times_us': None,
  'triton_version': None}""",  # noqa: B950
         )
+
+    @dynamo_config.patch(
+        {
+            "log_compilation_metrics": True,
+        }
+    )
+    def test_ir_count(self):
+        def test1(x):
+            y = x + x
+            z = y * y
+            return z
+
+        compilation_events = []
+        with mock.patch("torch._dynamo.utils.log_compilation_event") as log_event:
+            torch.compile(test1)(torch.randn(10, 10))
+            compilation_events = [arg[0][0] for arg in log_event.call_args_list]
+        self.assertEqual(compilation_events[0].ir_count, 10)
+
+        def test2(x):
+            y = x + x
+            return y
+
+        compilation_events = []
+        with mock.patch("torch._dynamo.utils.log_compilation_event") as log_event:
+            torch.compile(test2)(torch.randn(10, 10))
+            compilation_events = [arg[0][0] for arg in log_event.call_args_list]
+        self.assertEqual(compilation_events[0].ir_count, 16)
 
 
 class TestInductorConfigParsingForLogging(TestCase):
