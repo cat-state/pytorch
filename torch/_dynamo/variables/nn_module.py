@@ -60,6 +60,7 @@ from ..utils import (
     is_safe_constant,
     istensor,
     istype,
+    counters,
     nnmodule_has_hooks,
     object_has_getattribute,
     proxy_args_kwargs,
@@ -170,6 +171,8 @@ class NNModuleVariable(VariableTracker):
         self.value = value
         assert self.source
         self.nn_module_stack_source = self.source
+        for p in value.parameters():
+            counters["paramaters"]["total"] += p.numel()
 
     def get_nn_module_stack_source(self):
         return self.nn_module_stack_source or self.source
